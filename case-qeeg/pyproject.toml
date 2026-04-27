@@ -1,0 +1,14 @@
+[project]
+name = "case-qeeg"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "mne",
+    "fooof",
+    "antropy",
+    "numba",
+    "tqdm",
+]
