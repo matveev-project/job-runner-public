@@ -1,44 +1,64 @@
 # job-runner-public
 
-Public mirror of the one-time init scripts and per-case dependency
-manifests that prepare a fresh VM for the private job-runner
-framework. The canonical source lives in a private repository; this
-mirror exists only so a fresh VM can `curl` files without needing
-credentials.
+Public mirror of the init scripts and per-case dependency manifests
+that prepare a fresh VM for the private job-runner framework. The
+canonical sources live in a private repository; this mirror exists
+only so a fresh VM can `curl` files without needing credentials.
 
-## Two-step setup
+## How VMs use this
 
-A fresh VM goes through **two stages**:
+In the production fleet flow, **VMs do not run these scripts
+manually**. Each VM is created with `startup-script-url` pointing
+at `resource-setup/stage-1.sh`; GCP runs it as root on first boot
+and the VM bootstraps itself end-to-end (platform install →
+Filestore mount → workload setup → init test). The operator just
+runs `./create-fleet.sh <vcpus> <task_name>` from the service VM
+and waits for status files to appear in
+`~/job-runner-cloud/init-status/`.
 
-1. **General init** — install OS-level dependencies (`git`,
-   `sysbench`, `uv`), benchmark the CPU, print machine facts.
-   One-time per VM, regardless of the workload it will run.
-2. **Case-specific setup** — fetch the workload's `pyproject.toml`
-   and let `uv sync` materialize its Python environment.
+The two-stage chain:
 
-For a fresh Ubuntu 24 cloud VM running the qEEG workload:
+1. **`stage-1.sh` (entry)** — universal: reads VM metadata
+   (`platform`, `filestore-ip`, `task`), curls the matching
+   platform script (e.g. `ubuntu-python-cpu.sh`) for OS/runtime
+   install, mounts Filestore, sets up the `~/job-runner-cloud`
+   symlink, then hands off to stage-2.
+2. **`stage-2.sh` (private, on Filestore)** — clones into the
+   workspace for the given task, runs `uv sync`, runs the
+   workload's `init-test.py`, writes a per-VM `.ok` or `.fail`
+   marker.
+
+Only stage-1 and the platform scripts are mirrored here; stage-2
+is private and the operator copies it to Filestore manually.
+
+## Manual standalone use
+
+If you're setting up a single VM by hand (no fleet, no Filestore):
 
 ```bash
-# Step 1: general init
+# Just the platform install (apt + uv + sysbench + machine facts):
 curl -sSL https://raw.githubusercontent.com/matveev-project/job-runner-public/main/resource-setup/ubuntu-python-cpu.sh | bash
 
-# Step 2: case-specific deps (qEEG)
+# Optional: case-specific deps if you want a Python env ready
 curl -sSL https://raw.githubusercontent.com/matveev-project/job-runner-public/main/case-qeeg/pyproject.toml -o pyproject.toml
 uv sync
 ```
 
-After step 2 the VM has a Python environment with `numpy`, `scipy`,
-`pandas`, `mne`, `fooof`, `antropy`, `numba`, and `tqdm` ready to
-use.
+The platform script prints machine facts on its final line:
+```
+os=<id>-<version> cpu_cores=<N> cpu_score=<events/sec> ram_gb=<N>
+```
 
 ## Layout
 
 ```
 resource-setup/
-  ubuntu-python-cpu.sh     # fresh Ubuntu 24 cloud VM, CPU-only Python workloads
+  stage-1.sh              # universal entry; what GCP startup-script-url points at
+  ubuntu-python-cpu.sh    # platform install for Ubuntu 24 + Python + CPU
 case-qeeg/
-  pyproject.toml           # qEEG workload Python dependencies
+  pyproject.toml          # qEEG workload Python dependencies
 ```
 
-Additional init-script variants (GPU, Rust) and additional case
-manifests are mirrored here as they are implemented upstream.
+Additional platform variants (`ubuntu-python-gpu.sh`,
+`ubuntu-rust-cpu.sh`) and additional case manifests get mirrored
+here as they're implemented upstream.
