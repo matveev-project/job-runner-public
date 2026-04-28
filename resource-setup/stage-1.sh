@@ -12,7 +12,7 @@ PLATFORM=$(curl -sf -H "$HEADER" "$META/platform")
 FILESTORE_IP=$(curl -sf -H "$HEADER" "$META/filestore-ip")
 TASK=$(curl -sf -H "$HEADER" "$META/task")
 
-curl -sSL "${PUBLIC_BASE}/${PLATFORM}.sh" | bash
+runuser -u ubuntu -- bash -c "curl -sSL '${PUBLIC_BASE}/${PLATFORM}.sh' | bash"
 
 apt-get install -y -qq nfs-common
 mkdir -p /nss_data
@@ -26,4 +26,4 @@ ln -sfn "$CLOUD_ROOT" /home/ubuntu/job-runner-cloud
 chown -h ubuntu:ubuntu /home/ubuntu/job-runner-cloud
 
 touch /var/lib/job-runner-init.done
-exec bash /root/job-runner-cloud/vm-init/stage-2.sh "$TASK"
+exec runuser -u ubuntu -- bash /home/ubuntu/job-runner-cloud/vm-init/stage-2.sh "$TASK"
