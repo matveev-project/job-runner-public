@@ -25,5 +25,7 @@ ln -sfn "$CLOUD_ROOT" /root/job-runner-cloud
 ln -sfn "$CLOUD_ROOT" /home/ubuntu/job-runner-cloud
 chown -h ubuntu:ubuntu /home/ubuntu/job-runner-cloud
 
+echo 'UV_PROJECT_ENVIRONMENT=/home/ubuntu/.venv' >> /etc/environment
+
 touch /var/lib/job-runner-init.done
 exec runuser -u ubuntu -- bash /home/ubuntu/job-runner-cloud/vm-init/stage-2.sh "$TASK"
