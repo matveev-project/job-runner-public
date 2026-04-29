@@ -4,6 +4,11 @@ exec >> /var/log/stage-1.log 2>&1
 
 [ -f /var/lib/job-runner-init.done ] && exit 0
 
+# Capture stage-1 entry time for the init-stage elapsed measurement.
+# stage-2 reads this when it marks init-status, so the recorded time
+# covers the full bootstrap (apt + uv install + NFS mount + uv sync).
+date +%s > /var/lib/job-runner-stage-1.start
+
 # Stop + mask Ubuntu's auto-update services before any apt operations.
 # At first boot one of these grabs the dpkg lock to apply security
 # patches, blocking stage-1 for 15-20 min on unlucky VMs. Ephemeral
