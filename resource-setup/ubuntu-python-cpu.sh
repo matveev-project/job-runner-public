@@ -2,7 +2,7 @@
 set -euo pipefail
 
 sudo -n apt-get update -qq
-sudo -n apt-get install -y -qq git sysbench
+sudo -n apt-get install -y -qq git sysbench htop btop
 
 if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
