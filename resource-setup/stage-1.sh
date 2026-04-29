@@ -4,6 +4,14 @@ exec >> /var/log/stage-1.log 2>&1
 
 [ -f /var/lib/job-runner-init.done ] && exit 0
 
+# Stop + mask Ubuntu's auto-update services before any apt operations.
+# At first boot one of these grabs the dpkg lock to apply security
+# patches, blocking stage-1 for 15-20 min on unlucky VMs. Ephemeral
+# fleet VMs don't need unattended security updates — they're killed
+# after the task.
+systemctl stop unattended-upgrades.service apt-daily.service apt-daily-upgrade.service 2>/dev/null || true
+systemctl mask unattended-upgrades.service apt-daily.service apt-daily-upgrade.service 2>/dev/null || true
+
 META="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 HEADER="Metadata-Flavor: Google"
 PUBLIC_BASE="https://raw.githubusercontent.com/matveev-project/job-runner-public/main/resource-setup"
