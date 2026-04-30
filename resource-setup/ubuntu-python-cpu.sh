@@ -10,8 +10,15 @@ set -euo pipefail
 sudo -n sed -i 's|http://security.ubuntu.com/ubuntu|http://us-central1.gce.archive.ubuntu.com/ubuntu|' \
     /etc/apt/sources.list.d/ubuntu.sources
 
-sudo -n apt-get update -qq
-sudo -n apt-get install -y -qq git sysbench htop btop
+# Bound apt's stall behaviour. Defaults are Acquire::http::Timeout=120
+# and Acquire::Retries=0, so a single slow mirror connection can sit
+# for up to two minutes with no retry — observed as 90s+ apt-get
+# update outliers even after the security-mirror repoint above. With
+# Timeout=15 + Retries=3 a transient blip recovers cleanly and
+# worst-case is ~60s instead of 120+.
+APT_OPTS=(-o "Acquire::http::Timeout=15" -o "Acquire::Retries=3")
+sudo -n apt-get "${APT_OPTS[@]}" update -qq
+sudo -n apt-get "${APT_OPTS[@]}" install -y -qq git sysbench htop btop
 
 # Pre-seed btop config so tmux-fleet's `btop -p 2` actually renders
 # preset 2's boxes (cpu+mem+net). btop's compiled default for
