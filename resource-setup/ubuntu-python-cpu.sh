@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Repoint Ubuntu's security suite to the GCE regional mirror. The cloud
+# image's default security URL is the geo-routed security.ubuntu.com,
+# which intermittently stalls or times out (~4-minute apt-get update
+# on ~7% of VMs in our us-central1 fleet, observed twice in 27 boots).
+# us-central1.gce.archive.ubuntu.com serves noble-security with the
+# same content at ~10 ms — strict upgrade.
+sudo -n sed -i 's|http://security.ubuntu.com/ubuntu|http://us-central1.gce.archive.ubuntu.com/ubuntu|' \
+    /etc/apt/sources.list.d/ubuntu.sources
+
 sudo -n apt-get update -qq
 sudo -n apt-get install -y -qq git sysbench htop btop
 
