@@ -14,10 +14,14 @@ sudo -n sed -i 's|http://security.ubuntu.com/ubuntu|http://us-central1.gce.archi
 # indices. Empirically `apt-get update` was the dominant boot-time
 # variance (50-280 s tail across 36 boots) — the regional GCE mirror
 # trickles slowly enough that Acquire::http::Timeout=15 doesn't
-# trigger (it's a no-data timeout). With ubuntu-minimal-2404-noble
-# v20260429 the baked indices are 2 days old; for our stable package
-# set (git/sysbench/htop/btop) the risk that a referenced .deb has
-# been superseded is near zero. apt-get install retains
+# trigger (it's a no-data timeout). The standard ubuntu-2404-noble
+# cloud image ships /var/lib/apt/lists/ pre-populated; the minimal
+# variant strips those (verified the hard way, May 1 2026), so this
+# path requires the standard image. Indices age slowly between
+# Canonical's image rebuilds (~weekly); for our stable package set
+# (git/sysbench/htop/btop) the risk a referenced .deb has been
+# superseded is near zero — install fails fast on stale-index miss,
+# so we'd notice immediately. apt-get install retains
 # Timeout/Retries against transient .deb-fetch stalls.
 APT_OPTS=(-o "Acquire::http::Timeout=15" -o "Acquire::Retries=3")
 sudo -n apt-get "${APT_OPTS[@]}" install -y -qq git sysbench htop btop
