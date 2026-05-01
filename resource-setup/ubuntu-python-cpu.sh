@@ -10,14 +10,16 @@ set -euo pipefail
 sudo -n sed -i 's|http://security.ubuntu.com/ubuntu|http://us-central1.gce.archive.ubuntu.com/ubuntu|' \
     /etc/apt/sources.list.d/ubuntu.sources
 
-# Bound apt's stall behaviour. Defaults are Acquire::http::Timeout=120
-# and Acquire::Retries=0, so a single slow mirror connection can sit
-# for up to two minutes with no retry — observed as 90s+ apt-get
-# update outliers even after the security-mirror repoint above. With
-# Timeout=15 + Retries=3 a transient blip recovers cleanly and
-# worst-case is ~60s instead of 120+.
+# Skip `apt-get update` and rely on the cloud image's pre-baked apt
+# indices. Empirically `apt-get update` was the dominant boot-time
+# variance (50-280 s tail across 36 boots) — the regional GCE mirror
+# trickles slowly enough that Acquire::http::Timeout=15 doesn't
+# trigger (it's a no-data timeout). With ubuntu-minimal-2404-noble
+# v20260429 the baked indices are 2 days old; for our stable package
+# set (git/sysbench/htop/btop) the risk that a referenced .deb has
+# been superseded is near zero. apt-get install retains
+# Timeout/Retries against transient .deb-fetch stalls.
 APT_OPTS=(-o "Acquire::http::Timeout=15" -o "Acquire::Retries=3")
-sudo -n apt-get "${APT_OPTS[@]}" update -qq
 sudo -n apt-get "${APT_OPTS[@]}" install -y -qq git sysbench htop btop
 
 # Pre-seed btop config so tmux-fleet's `btop -p 2` actually renders
