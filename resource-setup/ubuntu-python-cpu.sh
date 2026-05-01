@@ -29,12 +29,17 @@ sudo -n apt-get "${APT_OPTS[@]}" update -qq
 sudo -n apt-get "${APT_OPTS[@]}" install -y -qq git sysbench htop btop
 
 # Pre-seed btop config so tmux-fleet's `btop -p 2` actually renders
-# preset 2's boxes (cpu+mem+net). btop's compiled default for
-# `shown_boxes` includes proc, and `-p N` doesn't override the saved
-# config — so without this line, btop's auto-written config would
-# render all four boxes regardless of the preset flag.
+# preset 2's boxes (cpu+mem+net) and the disks panel hides the small
+# /boot/efi mount that otherwise clutters the row alongside root and
+# boot. btop's compiled default for `shown_boxes` includes proc, and
+# `-p N` doesn't override the saved config — without these lines,
+# btop's auto-written config would render all four boxes plus the
+# EFI disk regardless of the preset flag.
 mkdir -p ~/.config/btop
-echo 'shown_boxes = "cpu mem net"' > ~/.config/btop/btop.conf
+cat > ~/.config/btop/btop.conf <<'EOF'
+shown_boxes = "cpu mem net"
+disks_filter = "exclude=/boot/efi"
+EOF
 
 if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
