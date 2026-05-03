@@ -38,6 +38,20 @@ ln -sfn "$CLOUD_ROOT" /root/job-runner-cloud
 ln -sfn "$CLOUD_ROOT" /home/ubuntu/job-runner-cloud
 chown -h ubuntu:ubuntu /home/ubuntu/job-runner-cloud
 
+# Mark this VM's SIMD code path so list-fleet.sh can show whether
+# the host has AVX-512. SIMD width — not vendor — is the principled
+# axis for FOOOF reproducibility (see qeeg-calc/amd-vs-intel-fooof.md
+# "Framing correction" + the AVX-512 mechanism addendum). Read
+# /proc/cpuinfo flags directly so the marker is correct for any new
+# CPU model, no lookup table to keep current.
+SIMD_DIR="$CLOUD_ROOT/simd-status"
+mkdir -p "$SIMD_DIR"
+if grep -q '^flags.*\bavx512f\b' /proc/cpuinfo; then
+    echo "AVX-512" > "$SIMD_DIR/$(hostname)"
+else
+    echo "AVX2"    > "$SIMD_DIR/$(hostname)"
+fi
+
 echo 'UV_PROJECT_ENVIRONMENT=/home/ubuntu/.venv' >> /etc/environment
 
 touch /var/lib/job-runner-init.done
