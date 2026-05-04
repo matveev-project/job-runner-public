@@ -24,6 +24,10 @@ PUBLIC_BASE="https://raw.githubusercontent.com/matveev-project/job-runner-public
 PLATFORM=$(curl -sf -H "$HEADER" "$META/platform")
 FILESTORE_IP=$(curl -sf -H "$HEADER" "$META/filestore-ip")
 TASK=$(curl -sf -H "$HEADER" "$META/task")
+# fast=1 tells stage-2 to skip init-test.py. Optional metadata key:
+# default to 0 if create-fleet didn't set it (older fleets, manual VMs).
+FAST=$(curl -sf -H "$HEADER" "$META/fast" || echo "0")
+[[ -z "$FAST" ]] && FAST=0
 
 runuser -u ubuntu -- bash -c "curl -sSL '${PUBLIC_BASE}/${PLATFORM}.sh' | bash"
 
@@ -61,4 +65,4 @@ chown ubuntu:ubuntu "$SIMD_DIR/$(hostname)"
 echo 'UV_PROJECT_ENVIRONMENT=/home/ubuntu/.venv' >> /etc/environment
 
 touch /var/lib/job-runner-init.done
-exec runuser -u ubuntu -- bash /home/ubuntu/job-runner-cloud/vm-init/stage-2.sh "$TASK"
+exec runuser -u ubuntu -- bash /home/ubuntu/job-runner-cloud/vm-init/stage-2.sh "$TASK" "$FAST"
