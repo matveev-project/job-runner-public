@@ -11,4 +11,5 @@ dependencies = [
     "antropy",
     "numba",
     "tqdm",
+    "pyarrow",
 ]
