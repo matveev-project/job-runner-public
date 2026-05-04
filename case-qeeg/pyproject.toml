@@ -12,4 +12,5 @@ dependencies = [
     "numba",
     "tqdm",
     "pyarrow",
+    "psutil",
 ]
