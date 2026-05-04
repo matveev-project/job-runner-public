@@ -46,11 +46,17 @@ chown -h ubuntu:ubuntu /home/ubuntu/job-runner-cloud
 # CPU model, no lookup table to keep current.
 SIMD_DIR="$CLOUD_ROOT/simd-status"
 mkdir -p "$SIMD_DIR"
+# Chown so create-fleet.sh --wipe (run as ubuntu) can rm files inside.
+# Directory unlink needs write on the parent, not on the file; stage-1
+# runs as root, so without this the dir ends up root-owned and --wipe
+# fails with EPERM. File chown matches the same pattern for cleanliness.
+chown ubuntu:ubuntu "$SIMD_DIR"
 if grep -q '^flags.*\bavx512f\b' /proc/cpuinfo; then
     echo "AVX-512" > "$SIMD_DIR/$(hostname)"
 else
     echo "AVX2"    > "$SIMD_DIR/$(hostname)"
 fi
+chown ubuntu:ubuntu "$SIMD_DIR/$(hostname)"
 
 echo 'UV_PROJECT_ENVIRONMENT=/home/ubuntu/.venv' >> /etc/environment
 
